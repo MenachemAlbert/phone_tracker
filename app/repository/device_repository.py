@@ -75,26 +75,30 @@ def create_device_interaction(interaction: Interaction):
 def get_bluetooth_connected_devices():
     with driver.session() as session:
         query = """
-        MATCH path = (d1:Device)-[r:INTERACTION*]->(d2:Device)
-        WHERE all(rel IN r WHERE rel.method = 'Bluetooth')
-        RETURN nodes(path) AS devices, size(nodes(path)) AS total_devices
-        """
-        res = session.run(query).data()
-        return [
-            {"devices": [dict(device) for device in record["devices"]],
-             "path_length": len(record["devices"])}
-            for record in res]
+                  MATCH (start:Device)
+                  MATCH (end:Device)
+                  WHERE start <> end
+                  MATCH path = shortestPath((start)-[:INTERACTION*]->(end))
+                  WHERE ALL(r IN relationships(path) WHERE r.method = 'Bluetooth')
+                  WITH path, length(path) as pathLength
+                  ORDER BY pathLength DESC
+                  RETURN length(path) as len, path
+                  """
+        result = session.run(query).data()
+        return result
 
 
 def get_devices_connected_stronger_than_60():
     with driver.session() as session:
         query = """
         MATCH (d1:Device)-[r:INTERACTION]->(d2:Device)
-        WHERE rel.signal_strength_dbm > -60
-        RETURN [d1,d2]
+        WHERE r.signal_strength_dbm > -60
+        RETURN d1, d2
         """
         res = session.run(query).data()
-        return [{"devices": [dict(device) for device in record["devices"]]} for record in res]
+        return [
+            {"devices": [dict(record["d1"]), dict(record["d2"])]}
+            for record in res]
 
 
 def count_connected_devices(device_id: str):
