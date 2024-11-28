@@ -106,3 +106,13 @@ def count_connected_devices(device_id: str):
         params = {"device_id": device_id}
         res = session.run(query, params).single()
         return res["connected_devices"] if res else 0
+
+
+def check_connection(device_id1: str, device_id2: str):
+    with driver.session() as session:
+        query = """
+        MATCH (d1:Device {device_id: $device_id1})-[:INTERACTION]-(d2:Device {device_id: $device_id2})
+        RETURN COUNT(d1) > 0 AS is_connected
+        """
+        res = session.run(query, {"device_id1": device_id1, "device_id2": device_id2}).single()
+        return res["is_connected"] if res else False

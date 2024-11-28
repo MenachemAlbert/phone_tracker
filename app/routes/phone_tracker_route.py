@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify
 from app.db.models.Interaction import Interaction
 from app.db.models.device import Device
 from app.repository.device_repository import insert_device, create_device_interaction, get_device_by_id, \
-    get_bluetooth_connected_devices, get_devices_connected_stronger_than_60, count_connected_devices
+    get_bluetooth_connected_devices, get_devices_connected_stronger_than_60, count_connected_devices, check_connection
 
 phone_blueprint = Blueprint("phone_tracker", __name__)
 
@@ -65,10 +65,23 @@ def connected_stronger_than_60():
 
 
 @phone_blueprint.route("/count_connected_devices", methods=["GET"])
-def get_connected_devices():
+def get_count_connected_devices():
     try:
         device_id = request.json.get('device_id')
         connected_devices_count = count_connected_devices(device_id)
         return jsonify({"device_id": device_id, "connected_devices": connected_devices_count}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@phone_blueprint.route("/check_connection", methods=["GET"])
+def check_devices_connection():
+    device_id1 = request.json.get('device_id1')
+    device_id2 = request.json.get('device_id2')
+    if not get_device_by_id(device_id1) or not get_device_by_id(device_id2):
+        return "one or mor devices not exists", 400
+    try:
+        is_connected = check_connection(device_id1, device_id2)
+        return jsonify({"device_id1": device_id1, "device_id2": device_id2, "is_connected": is_connected}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
