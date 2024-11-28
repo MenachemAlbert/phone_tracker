@@ -70,3 +70,18 @@ def create_device_interaction(interaction: Interaction):
         }
         res = session.run(query, params).single()
         return res
+
+
+def get_bluetooth_connected_devices():
+    with driver.session() as session:
+        query = """
+        MATCH path = (d1:Device)-[r:INTERACTION*]->(d2:Device)
+        WHERE all(rel IN r WHERE rel.method = 'Bluetooth')
+        RETURN nodes(path) AS devices, size(nodes(path)) AS total_devices
+        """
+        res = session.run(query).data()
+        connections = [
+            {"devices": [dict(device) for device in record["devices"]], "path_length": len(record["devices"])} for
+            record in res]
+        return connections
+
