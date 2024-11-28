@@ -3,7 +3,8 @@ from flask import Blueprint, request, jsonify
 from app.db.models.Interaction import Interaction
 from app.db.models.device import Device
 from app.repository.device_repository import insert_device, create_device_interaction, get_device_by_id, \
-    get_bluetooth_connected_devices, get_devices_connected_stronger_than_60, count_connected_devices, check_connection
+    get_bluetooth_connected_devices, get_devices_connected_stronger_than_60, count_connected_devices, check_connection, \
+    get_most_recent_interaction
 
 phone_blueprint = Blueprint("phone_tracker", __name__)
 
@@ -83,5 +84,19 @@ def check_devices_connection():
     try:
         is_connected = check_connection(device_id1, device_id2)
         return jsonify({"device_id1": device_id1, "device_id2": device_id2, "is_connected": is_connected}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@phone_blueprint.route("/most_recent_interaction", methods=["GET"])
+def most_recent_interaction():
+    device_id = request.json.get('device_id')
+    try:
+        res = get_most_recent_interaction(device_id)
+        if res is None:
+            return jsonify({"message": "No interactions found for the specified device"}), 404
+        return jsonify({
+            "device_id": device_id,
+            "most_recent_interaction": res["interaction_datetime"].strftime("%Y-%m-%dT%H:%M:%S")}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

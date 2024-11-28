@@ -89,9 +89,9 @@ def get_bluetooth_connected_devices():
 def get_devices_connected_stronger_than_60():
     with driver.session() as session:
         query = """
-        MATCH path = (d1:Device)-[r:INTERACTION*]->(d2:Device)
-        WHERE ALL(rel IN relationships(path) WHERE rel.signal_strength_dbm > -60)
-        RETURN nodes(path) AS devices
+        MATCH (d1:Device)-[r:INTERACTION]->(d2:Device)
+        WHERE rel.signal_strength_dbm > -60
+        RETURN [d1,d2]
         """
         res = session.run(query).data()
         return [{"devices": [dict(device) for device in record["devices"]]} for record in res]
@@ -114,5 +114,18 @@ def check_connection(device_id1: str, device_id2: str):
         MATCH (d1:Device {device_id: $device_id1})-[:INTERACTION]-(d2:Device {device_id: $device_id2})
         RETURN COUNT(d1) > 0 AS is_connected
         """
-        res = session.run(query, {"device_id1": device_id1, "device_id2": device_id2}).single()
+        params = {"device_id1": device_id1, "device_id2": device_id2}
+        res = session.run(query, params).single()
         return res["is_connected"] if res else False
+
+
+def get_most_recent_interaction(device_id: str):
+    with driver.session() as session:
+        query = """
+        MATCH (d:Device {device_id: $device_id})-[r:INTERACTION]-(d1:Device)
+        RETURN datetime(r.timestamp) AS interaction_datetime
+        ORDER BY r.timestamp DESC
+        """
+        params = {"device_id": device_id}
+        res = session.run(query, params).single()
+        return res
