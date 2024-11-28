@@ -95,3 +95,14 @@ def get_devices_connected_stronger_than_60():
         """
         res = session.run(query).data()
         return [{"devices": [dict(device) for device in record["devices"]]} for record in res]
+
+
+def count_connected_devices(device_id: str):
+    with driver.session() as session:
+        query = """
+        MATCH (d1:Device {device_id: $device_id})-[:INTERACTION]-(d2:Device)
+        RETURN COUNT(d2) AS connected_devices
+        """
+        params = {"device_id": device_id}
+        res = session.run(query, params).single()
+        return res["connected_devices"] if res else 0
