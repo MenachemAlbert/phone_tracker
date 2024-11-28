@@ -3,12 +3,12 @@ from flask import Blueprint, request, jsonify
 from app.db.models.Interaction import Interaction
 from app.db.models.device import Device
 from app.repository.device_repository import insert_device, create_device_interaction, get_device_by_id, \
-    get_bluetooth_connected_devices
+    get_bluetooth_connected_devices, get_devices_connected_stronger_than_60
 
 phone_blueprint = Blueprint("phone_tracker", __name__)
 
 
-@phone_blueprint.route("/phone_tracker", methods=['POST'])
+@phone_blueprint.route("/", methods=['POST'])
 def get_interaction():
     devices_data = request.json.get('devices')
     for device_data in devices_data:
@@ -53,3 +53,13 @@ def get_bluetooth_connections():
         return jsonify({"status": "success", "connections": connections}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@phone_blueprint.route("/devices_connected_stronger_than_60", methods=['GET'])
+def connected_stronger_than_60():
+    try:
+        connections = get_devices_connected_stronger_than_60()
+        return jsonify({"status": "success", "connections": connections}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+

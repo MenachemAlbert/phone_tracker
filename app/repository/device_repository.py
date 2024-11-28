@@ -80,8 +80,18 @@ def get_bluetooth_connected_devices():
         RETURN nodes(path) AS devices, size(nodes(path)) AS total_devices
         """
         res = session.run(query).data()
-        connections = [
-            {"devices": [dict(device) for device in record["devices"]], "path_length": len(record["devices"])} for
-            record in res]
-        return connections
+        return [
+            {"devices": [dict(device) for device in record["devices"]],
+             "path_length": len(record["devices"])}
+            for record in res]
 
+
+def get_devices_connected_stronger_than_60():
+    with driver.session() as session:
+        query = """
+        MATCH path = (d1:Device)-[r:INTERACTION*]->(d2:Device)
+        WHERE ALL(rel IN relationships(path) WHERE rel.signal_strength_dbm > -60)
+        RETURN nodes(path) AS devices
+        """
+        res = session.run(query).data()
+        return [{"devices": [dict(device) for device in record["devices"]]} for record in res]
